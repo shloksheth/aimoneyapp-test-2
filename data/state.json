@@ -1,0 +1,17 @@
+{
+  "agents": {
+    "content-agent": {
+      "id": "content-agent",
+      "status": "idle",
+      "totalEarnings": 465.73,
+      "lastRun": 1778366657009
+    },
+    "task-agent": {
+      "id": "task-agent",
+      "status": "idle",
+      "totalEarnings": 0,
+      "lastRun": 1778366657009
+    }
+  },
+  "overallTotal": 465.73
+}
