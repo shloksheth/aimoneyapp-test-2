@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Play, Square, Settings2, Info } from 'lucide-react';
 
+import { clientAgentManager } from '@/lib/ClientAgentManager';
+
 interface StrategyCardProps {
   agent: {
     id: string;
@@ -12,22 +14,15 @@ interface StrategyCardProps {
     status: string;
     totalEarnings: number;
   };
-  onRefresh: () => void;
 }
 
-export default function StrategyCard({ agent, onRefresh }: StrategyCardProps) {
+export default function StrategyCard({ agent }: StrategyCardProps) {
   const [loading, setLoading] = useState(false);
 
   const toggleStatus = async () => {
     setLoading(true);
-    const action = agent.status === 'running' ? 'stop' : 'start';
     try {
-      await fetch('/api/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: agent.id, action })
-      });
-      onRefresh();
+      await clientAgentManager.toggleAgent(agent.id);
     } catch (error) {
       console.error('Failed to toggle agent:', error);
     } finally {

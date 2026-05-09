@@ -5,40 +5,35 @@ import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, DollarSign, Target, TrendingUp, Wallet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import StrategyCard from './StrategyCard';
+import { clientAgentManager } from '@/lib/ClientAgentManager';
 
 export default function Dashboard() {
-  const [earnings, setEarnings] = useState<any>(null);
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
-    try {
-      const [earningsRes, agentsRes] = await Promise.all([
-        fetch('/api/earnings'),
-        fetch('/api/agents')
-      ]);
-      const earningsData = await earningsRes.json();
-      const agentsData = await agentsRes.json();
-      setEarnings(earningsData);
-      setAgents(agentsData);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+    clientAgentManager.subscribe((updatedAgents) => {
+      setAgents(updatedAgents);
+      setLoading(false);
+    });
   }, []);
 
-  if (loading && !earnings) {
+  const totalEarnings = agents.reduce((sum, a) => sum + a.totalEarnings, 0);
+  const dailyGoal = 500;
+  const progress = (totalEarnings / dailyGoal) * 100;
+
+  const history = [
+    { name: '8am', amount: totalEarnings * 0.1 },
+    { name: '10am', amount: totalEarnings * 0.25 },
+    { name: '12pm', amount: totalEarnings * 0.45 },
+    { name: '2pm', amount: totalEarnings * 0.7 },
+    { name: '4pm', amount: totalEarnings * 0.85 },
+    { name: '6pm', amount: totalEarnings },
+  ];
+
+  if (loading && agents.length === 0) {
     return <div className="flex items-center justify-center min-h-screen">Loading AI Financial Ecosystem...</div>;
   }
-
-  const progress = (earnings?.totalEarnings / earnings?.dailyGoal) * 100;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
@@ -58,7 +53,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase font-bold">Balance</p>
-              <p className="text-xl font-bold text-slate-900">${earnings?.totalEarnings.toFixed(2)}</p>
+              <p className="text-xl font-bold text-slate-900">${totalEarnings.toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -71,8 +66,8 @@ export default function Dashboard() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-blue-100 font-medium">Daily Progress</p>
-                <h3 className="text-3xl font-bold mt-1">${earnings?.totalEarnings.toFixed(2)}</h3>
-                <p className="text-blue-200 text-sm mt-2">Goal: ${earnings?.dailyGoal}</p>
+                <h3 className="text-3xl font-bold mt-1">${totalEarnings.toFixed(2)}</h3>
+                <p className="text-blue-200 text-sm mt-2">Goal: ${dailyGoal}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-xl">
                 <Target size={24} />
@@ -112,7 +107,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-slate-500 font-medium">Est. Hourly Rate</p>
                 <h3 className="text-3xl font-bold mt-1 text-slate-900">
-                  ${(earnings?.totalEarnings / 8 || 0).toFixed(2)}/hr
+                  ${(totalEarnings / 8 || 0).toFixed(2)}/hr
                 </h3>
                 <p className="text-slate-400 text-sm mt-2">Based on current activity</p>
               </div>
@@ -132,7 +127,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={earnings?.history}>
+              <LineChart data={history}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
@@ -190,7 +185,7 @@ export default function Dashboard() {
         <h2 className="text-xl font-bold text-slate-900 mb-4">AI Revenue Strategies</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {agents.map(agent => (
-            <StrategyCard key={agent.id} agent={agent} onRefresh={fetchData} />
+            <StrategyCard key={agent.id} agent={agent} />
           ))}
         </div>
       </div>
